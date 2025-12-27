@@ -17,6 +17,8 @@ class WeatherApp(QWidget):
         self.emoji_label=QLabel(self)
         self.description_label=QLabel(self)
         self.day_night_label = QLabel(self)
+        self.aqi_label = QLabel(self)
+
         # Mobile 9:16 base size
         self.base_width = 360
         self.base_height = 640
@@ -33,6 +35,22 @@ class WeatherApp(QWidget):
             self.resize(w, h)
 
         super().resizeEvent(event)
+    def calculate_pm25_aqi(self, pm25):
+        breakpoints = [
+        (0.0, 12.0, 0, 50),
+        (12.1, 35.4, 51, 100),
+        (35.5, 55.4, 101, 150),
+        (55.5, 150.4, 151, 200),
+        (150.5, 250.4, 201, 300),
+        (250.5, 500.4, 301, 500),
+    ]
+
+        for c_low, c_high, i_low, i_high in breakpoints:
+            if c_low <= pm25 <= c_high:
+                aqi = ((i_high - i_low) / (c_high - c_low)) * (pm25 - c_low) + i_low
+                return round(aqi)
+
+        return None
 
 
     def initUI(self):
@@ -47,6 +65,10 @@ class WeatherApp(QWidget):
         vbox.addWidget(self.emoji_label)
         vbox.addWidget(self.description_label)
         vbox.addWidget(self.day_night_label)
+        vbox.addWidget(self.aqi_label)
+        self.aqi_label.setAlignment(Qt.AlignCenter)
+        self.aqi_label.setObjectName("aqi_label")
+        self.aqi_label.setTextFormat(Qt.RichText)
 
         self.setLayout(vbox)
 
@@ -141,10 +163,29 @@ class WeatherApp(QWidget):
         font-size: 22px;
         color: #c7d2fe;
     }
+    QLabel#aqi_label {
+    font-size: 22px;
+    font-weight: 600;
+}
+
 """)
 
 
         self.get_weather_button.clicked.connect(self.get_weather)
+    def get_aqi(self, lat, lon):
+        api_key = "6218bc03419e7610b8ee12754c6e1ad8"
+        url = (
+        "https://api.openweathermap.org/data/2.5/air_pollution"
+            f"?lat={lat}&lon={lon}&appid={api_key}"
+    )
+
+        try:
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+            data = response.json()["list"][0]["components"]
+            return data["pm2_5"]
+        except requests.exceptions.RequestException:
+            return None
 
     def get_weather(self):
 
@@ -209,13 +250,15 @@ class WeatherApp(QWidget):
         self.emoji_label.clear()
         self.description_label.clear()
         self.day_night_label.clear()
-
+        self.aqi_label.clear()
 
 
     def display_weather(self, data):
-        temp = round(data["main"]["temp"])
+        temp = data["main"]["temp"]-273.15
         desc = data["weather"][0]["description"].title()
         weather_id = data["weather"][0]["id"]
+        lat = data["coord"]["lat"]
+        lon = data["coord"]["lon"]
 
         now = data["dt"]
         sunrise = data["sys"]["sunrise"]
@@ -231,7 +274,7 @@ class WeatherApp(QWidget):
             font-size:50px;
             font-weight:800;
             color:#38bdf8;">
-            {temp-273.15:.1f}&deg;C
+            {temp:.1f}&deg;C
         </div>
     """)
 
@@ -273,6 +316,40 @@ class WeatherApp(QWidget):
                 </span>
             </div>
         """)
+        
+
+        # ---------- AQI ----------
+        pm25 = self.get_aqi(lat, lon)
+
+        if pm25 is not None:
+            aqi_value = self.calculate_pm25_aqi(pm25)
+            label, color = self.get_aqi_category(aqi_value)
+
+            self.aqi_label.setText(f"""
+                <div style="
+                padding:8px 18px;
+                border-radius:16px;
+                background:{color};
+                color:white;">
+                PM 2.5:  {aqi_value} – {label}
+            </div>
+        """)
+        else:
+            self.aqi_label.clear()
+
+    def get_aqi_category(self, aqi):
+        if aqi <= 50:
+            return "Good", "#22c55e"
+        elif aqi <= 100:
+            return "Moderate", "#84cc16"
+        elif aqi <= 150:
+            return "Unhealthy for Sensitive Groups", "#facc15"
+        elif aqi <= 200:
+            return "Unhealthy", "#fb923c"
+        elif aqi <= 300:
+            return "Very Unhealthy", "#ef4444"
+        else:
+            return "Hazardous", "#7c2d12"
 
     def get_weather_emoji(self, weather_id, is_day):
         if 200<=weather_id<=232:
@@ -303,3 +380,4 @@ if __name__=="__main__":
     weather_app=WeatherApp()
     weather_app.show()
     sys.exit(app.exec())
+
