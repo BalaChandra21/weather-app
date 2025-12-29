@@ -9,7 +9,7 @@ function getWeather() {
     }
 
     const weatherURL =
-        `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`;
+        `https://api.openweathermap.org/data/2.5/air_pollution`;
 
     fetch(weatherURL)
         .then(response => response.json())
