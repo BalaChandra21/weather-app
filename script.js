@@ -39,7 +39,7 @@ function getWeather() {
 
 function getAQI(lat, lon) {
     const aqiURL =
-        `https://api.openweathermap.org/data/2.5/air_pollution`;
+        `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${API_KEY}`;
 
     fetch(aqiURL)
         .then(response => response.json())
