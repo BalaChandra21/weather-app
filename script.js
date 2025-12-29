@@ -9,7 +9,7 @@ function getWeather() {
     }
 
     const weatherURL =
-        `https://api.openweathermap.org/data/2.5/air_pollution`;
+        `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`;
 
     fetch(weatherURL)
         .then(response => response.json())
@@ -39,7 +39,7 @@ function getWeather() {
 
 function getAQI(lat, lon) {
     const aqiURL =
-        `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${API_KEY}`;
+        `https://api.openweathermap.org/data/2.5/air_pollution`;
 
     fetch(aqiURL)
         .then(response => response.json())
