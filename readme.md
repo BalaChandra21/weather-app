@@ -3,4 +3,4 @@
 A simple weather application that fetches real-time data using OpenWeather API.
 
 
-Project preview: https://weatherapp2117.netlify.app/
+Project preview: https://balachandra21.github.io/weather-app/
